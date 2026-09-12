@@ -145,14 +145,59 @@ npm run ingest -- recount                        # contadores de navegación
 
 Todos son idempotentes. `--offset` reanuda una sincronización cortada sin repetir lo ya hecho.
 
-Cadencia recomendada en cron (GitHub Actions sirve y es gratis):
+---
 
-| Tarea | Frecuencia |
-|---|---|
-| `sync:geo` | mensual |
-| `sync:radio` / `sync:tv` | diaria |
-| `check:streams` | cada 6 h, por lotes |
-| `recount` | tras cada sincronización |
+## Automatización (GitHub Actions)
+
+Los workflows de `.github/workflows/` mantienen el catálogo solo:
+
+| Workflow | Cuándo | Qué hace |
+|---|---|---|
+| `catalogo.yml` | diario, 05:10 UTC | `sync:geo` → `sync:radio --prune` → `sync:tv --prune` → `recount` |
+| `verificar-senales.yml` | cada 6 h | Comprueba ~4 000 señales por ejecución y recalcula contadores |
+
+Ambos se pueden lanzar a mano desde la pestaña **Actions** (`workflow_dispatch`), con parámetros:
+el de catálogo acepta país y límite, y el de verificación acepta cuántas señales revisar.
+
+Comparten `concurrency: ingesta`, así que **nunca se solapan**: si la verificación coincide con la
+sincronización diaria, la segunda espera en vez de escribir sobre las mismas filas.
+
+La verificación recorre ~16 000 señales al día, de modo que el catálogo completo (58 000 emisoras
++ 15 000 canales) se revisa entero cada 4 o 5 días. Se prioriza lo nunca comprobado y lo más
+antiguo, y dentro de eso las emisoras más escuchadas.
+
+### Lo que hay que configurar una vez
+
+**GitHub Actions no puede escribir en la base de desarrollo**: PGlite es un fichero en tu disco.
+Hace falta un Postgres accesible desde internet.
+
+1. Crea una base en [Neon](https://neon.tech) (capa gratuita suficiente) o Supabase.
+2. Crea el esquema en ella **una sola vez, desde tu máquina**:
+
+   ```bash
+   DATABASE_DRIVER=postgres DATABASE_URL="postgresql://..." npm run db:push
+   ```
+
+   Este paso no lo hace el cron a propósito: `drizzle-kit push` puede borrar columnas, y eso no
+   debe ocurrir sin que alguien lo mire.
+
+3. En el repositorio, **Settings → Secrets and variables → Actions**:
+   - Secreto `DATABASE_URL` con la cadena de conexión.
+   - (Opcional) Variable `SITE_URL` con tu dominio: el verificador la envía como cabecera
+     `Origin` para que cada servidor responda con su CORS real. Si el dominio no coincide con el
+     de producción, la detección de CORS será incorrecta.
+
+Sin el secreto, los workflows fallan en el primer paso con un mensaje que explica esto, en vez de
+reventar con un error de conexión sin contexto.
+
+### Cadencia
+
+| Tarea | Frecuencia | Por qué |
+|---|---|---|
+| `sync:geo` | diaria (va dentro del catálogo) | Tarda segundos y así aparecen países y ciudades nuevos sin un workflow aparte |
+| `sync:radio` / `sync:tv` | diaria | Es el ritmo al que se regeneran las fuentes |
+| `check:streams` | cada 6 h, por lotes | Las señales se caen a todas horas |
+| `recount` | tras cada una | Los contadores del menú solo cuentan lo reproducible |
 
 ---
 

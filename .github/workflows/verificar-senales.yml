@@ -1,0 +1,78 @@
+name: Verificar señales
+
+# Comprueba por lotes que los streams siguen vivos y si envían CORS.
+#
+# Es lo que separa un directorio que suena de una lista de enlaces muertos: los
+# streams públicos se caen constantemente y nadie avisa.
+#
+# Cobertura: ~4 000 señales por ejecución x 4 ejecuciones al día = ~16 000/día,
+# así que el catálogo completo (58 000 emisoras + 15 000 canales) se recorre
+# entero cada 4 o 5 días. Se prioriza lo nunca comprobado y lo más antiguo, y
+# dentro de eso las emisoras más escuchadas.
+on:
+  schedule:
+    - cron: '25 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      limite_radio:
+        description: 'Señales de radio a comprobar'
+        required: false
+        default: '3000'
+        type: string
+      limite_tv:
+        description: 'Señales de TV a comprobar'
+        required: false
+        default: '1000'
+        type: string
+
+concurrency:
+  group: ingesta
+  cancel-in-progress: false
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_DRIVER: postgres
+      USER_AGENT: WorldTune/0.1 (+https://github.com/${{ github.repository }})
+      # El verificador manda esta cabecera Origin para que cada servidor decida
+      # su Access-Control-Allow-Origin real. Debe ser el dominio del sitio.
+      PROBE_ORIGIN: ${{ vars.SITE_URL || 'https://worldtune.app' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Comprobar que hay base de datos
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Falta el secreto DATABASE_URL. Mira el README, sección Automatización."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      # Las entradas se pasan por el entorno y no interpoladas dentro del script:
+      # un ${{ inputs.x }} en medio de un run permite inyectar comandos.
+      - name: Radio
+        env:
+          LIMITE: ${{ inputs.limite_radio || '3000' }}
+        run: |
+          npm run ingest -- check:streams --kind radio --limit "$LIMITE" --concurrency 20 --stale-hours 24
+
+      - name: Televisión
+        env:
+          LIMITE: ${{ inputs.limite_tv || '1000' }}
+        run: |
+          npm run ingest -- check:streams --kind tv --limit "$LIMITE" --concurrency 12 --stale-hours 24
+
+      # Los contadores del menú solo cuentan lo reproducible, así que tienen que
+      # recalcularse después de cada verificación o mostrarían números viejos.
+      - name: Recalcular contadores
+        run: npm run ingest -- recount

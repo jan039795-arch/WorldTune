@@ -1,0 +1,84 @@
+name: Catálogo
+
+# Sincroniza el catálogo completo una vez al día.
+#
+# Esto NO puede correr contra la base local de desarrollo: PGlite es un fichero
+# en tu disco. El workflow escribe en el Postgres real que apunte el secreto
+# DATABASE_URL (Neon, Supabase o el que sea). Sin ese secreto no hay nada que
+# sincronizar y el job lo dice en vez de fallar de forma críptica.
+on:
+  schedule:
+    # 05:10 UTC: de madrugada en América y antes de la mañana europea. GitHub
+    # puede retrasar los cron unos minutos, y para un catálogo diario da igual.
+    - cron: '10 5 * * *'
+  workflow_dispatch:
+    inputs:
+      pais:
+        description: 'Solo un país (código ISO, p. ej. MX). Vacío = todo el mundo'
+        required: false
+        type: string
+      limite:
+        description: 'Máximo de emisoras a procesar. Vacío = sin límite'
+        required: false
+        type: string
+
+# Dos sincronizaciones a la vez escribirían sobre las mismas filas. Se encolan.
+concurrency:
+  group: ingesta
+  cancel-in-progress: false
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DATABASE_DRIVER: postgres
+      # Radio Browser pide un agente identificable; se incluye el repo para que
+      # puedan saber quién consume su API y contactar si algo molesta.
+      USER_AGENT: WorldTune/0.1 (+https://github.com/${{ github.repository }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Comprobar que hay base de datos
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Falta el secreto DATABASE_URL."
+            echo "Crea una base Postgres (Neon tiene capa gratuita), ejecuta 'npm run db:push'"
+            echo "contra ella una vez, y añade la cadena de conexión en"
+            echo "Settings -> Secrets and variables -> Actions -> New repository secret."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Geografía, idiomas y géneros
+        run: npm run ingest -- sync:geo
+
+      - name: Emisoras de radio
+        # Las entradas se pasan por el entorno y no interpoladas en el script:
+        # un ${{ inputs.x }} dentro de un run permite inyectar comandos.
+        env:
+          PAIS: ${{ inputs.pais }}
+          LIMITE: ${{ inputs.limite }}
+        run: |
+          ARGS=""
+          [ -n "$PAIS" ] && ARGS="$ARGS --country $PAIS"
+          [ -n "$LIMITE" ] && ARGS="$ARGS --limit $LIMITE"
+          # --prune desactiva lo que ya no existe en la fuente, pero solo tiene
+          # sentido en un barrido completo: con filtros marcaría como caído todo
+          # lo que no se ha visitado.
+          [ -z "$ARGS" ] && ARGS="--prune"
+          npm run ingest -- sync:radio $ARGS
+
+      - name: Canales de televisión
+        run: npm run ingest -- sync:tv --prune
+
+      - name: Recalcular contadores de navegación
+        run: npm run ingest -- recount

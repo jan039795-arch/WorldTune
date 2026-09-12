@@ -1,17 +1,8 @@
 #!/usr/bin/env node
-import { randomUUID } from 'node:crypto';
-import { resolve } from 'node:path';
+// Primero de todo: carga el .env antes de que se evalue ningun otro modulo.
+import './env';
 
-// La ingesta corre por cron y desde npm workspaces: el .env vive en la raiz del
-// repo, no en el directorio de trabajo. Node lo carga sin dependencias externas.
-for (const candidate of ['.env', '../../.env']) {
-  try {
-    process.loadEnvFile(resolve(process.cwd(), candidate));
-    break;
-  } catch {
-    // no existe: se usan las variables del entorno tal cual
-  }
-}
+import { randomUUID } from 'node:crypto';
 import { closeDb, getDb, ingestRuns, resolveDriver } from '@worldtune/db';
 import { eq } from 'drizzle-orm';
 import { checkStreams } from './check-streams';
