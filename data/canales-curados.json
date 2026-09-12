@@ -1,0 +1,41 @@
+{
+  "$comentario": [
+    "Catálogo curado a mano. Existe por dos motivos reales:",
+    "",
+    "1. iptv-org conoce muchos canales importantes pero no tiene ninguna señal para ellos,",
+    "   así que la ingesta automática los descarta. Aquí se les añade la URL oficial que el",
+    "   propio canal publica en su web.",
+    "2. Otros canales solo se pueden ver dentro de su propio reproductor (sesión tokenizada",
+    "   o DRM). Esos se marcan con 'soloSitioOficial' y se listan enlazando a su página, sin",
+    "   intentar incrustarlos: ni funcionaría ni sería correcto.",
+    "",
+    "Todo lo que entra por aquí queda marcado como 'curated' en la base de datos, que es la",
+    "lista blanca que haría falta para publicar en las tiendas de aplicaciones.",
+    "",
+    "Formato: 'id' es el identificador de iptv-org cuando el canal existe allí (así hereda",
+    "logo, geografía y datos); si no existe, se define el canal completo con 'definicion'."
+  ],
+  "canales": [
+    {
+      "id": "CanalOnce.mx",
+      "nota": "Señal HDpública del IPN. La URL está publicada en el JS de su propia página de en vivo (canalonce.mx/js/en-vivo.js) y responde con CORS abierto.",
+      "verificadoEl": "2026-09-12",
+      "categorias": ["culture", "education", "general"],
+      "streams": [
+        {
+          "url": "https://vivo.canaloncelive.tv/secureoncedos/oncedigital/playlist.m3u8",
+          "quality": "1080p",
+          "title": "Canal Once (once.3 digital)"
+        }
+      ]
+    },
+    {
+      "id": "Azteca7.mx",
+      "nota": "Emite gratis pero solo dentro de su propio reproductor: usa Uplynk con sesión tokenizada y el manifiesto que aparece en la página devuelve 404 fuera de ella. Se lista enlazando a su sitio, sin incrustar.",
+      "verificadoEl": "2026-09-12",
+      "soloSitioOficial": true,
+      "sitio": "https://www.tvazteca.com/azteca-siete/envivo",
+      "categorias": ["general", "entertainment", "sports"]
+    }
+  ]
+}

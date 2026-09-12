@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": false,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@worldtune/core": [
+        "packages/core/src/index.ts"
+      ],
+      "@worldtune/core/*": [
+        "packages/core/src/*"
+      ],
+      "@worldtune/db": [
+        "packages/db/src/index.ts"
+      ],
+      "@worldtune/db/*": [
+        "packages/db/src/*"
+      ],
+      "@worldtune/sources": [
+        "packages/sources/src/index.ts"
+      ],
+      "@worldtune/sources/*": [
+        "packages/sources/src/*"
+      ],
+      "@worldtune/api-client": [
+        "packages/api-client/src/index.ts"
+      ]
+    }
+  }
+}

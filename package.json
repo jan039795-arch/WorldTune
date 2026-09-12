@@ -1,0 +1,25 @@
+{
+  "name": "worldtune",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Radio y television en linea de todo el mundo, organizadas por pais, estado, ciudad y genero.",
+  "workspaces": ["packages/*", "apps/*"],
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "npm run dev -w @worldtune/web",
+    "build": "npm run build -w @worldtune/web",
+    "start": "npm run start -w @worldtune/web",
+    "ingest": "npm run ingest -w @worldtune/ingest --",
+    "db:push": "npm run db:push -w @worldtune/db",
+    "db:studio": "npm run db:studio -w @worldtune/db",
+    "typecheck": "tsc -b --pretty",
+    "test": "vitest run",
+    "lint": "next lint -w @worldtune/web"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "tsx": "^4.19.2",
+    "vitest": "^3.0.5",
+    "@types/node": "^22.13.1"
+  }
+}

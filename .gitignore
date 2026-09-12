@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+dist/
+.env
+.env.local
+.turbo/
+.pgdata/
+*.log
+.DS_Store
+**/data/cache/
+**/.expo/
+
+*.tsbuildinfo

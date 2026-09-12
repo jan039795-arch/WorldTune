@@ -1,0 +1,17 @@
+{
+  "name": "@worldtune/ingest",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ingest": "tsx src/cli.ts",
+    "start": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@worldtune/core": "*",
+    "@worldtune/db": "*",
+    "@worldtune/sources": "*",
+    "drizzle-orm": "^0.39.1"
+  },
+  "devDependencies": { "tsx": "^4.19.2" }
+}

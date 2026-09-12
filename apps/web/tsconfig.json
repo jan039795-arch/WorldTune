@@ -1,0 +1,47 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "allowJs": true,
+    "incremental": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@worldtune/core": [
+        "../../packages/core/src/index.ts"
+      ],
+      "@worldtune/core/*": [
+        "../../packages/core/src/*"
+      ],
+      "@worldtune/db": [
+        "../../packages/db/src/index.ts"
+      ],
+      "@worldtune/db/*": [
+        "../../packages/db/src/*"
+      ],
+      "@worldtune/sources": [
+        "../../packages/sources/src/index.ts"
+      ],
+      "@worldtune/sources/*": [
+        "../../packages/sources/src/*"
+      ]
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "isolatedModules": true,
+    "baseUrl": "."
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
