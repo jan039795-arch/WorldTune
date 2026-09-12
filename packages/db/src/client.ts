@@ -22,8 +22,25 @@ let closeFn: (() => Promise<void>) | null = null;
 
 export function resolveDriver(): DriverName {
   const explicit = process.env.DATABASE_DRIVER?.toLowerCase();
-  if (explicit === 'pglite' || explicit === 'postgres') return explicit;
-  return process.env.DATABASE_URL ? 'postgres' : 'pglite';
+  const driver: DriverName =
+    explicit === 'pglite' || explicit === 'postgres'
+      ? explicit
+      : process.env.DATABASE_URL
+        ? 'postgres'
+        : 'pglite';
+
+  /*
+   * En un despliegue, caer a PGlite es peor que fallar: crearía una base vacía
+   * dentro del contenedor, el build "funcionaría" y el sitio saldría publicado
+   * con cero emisoras. Un error aquí se ve; una web vacía se descubre tarde.
+   */
+  if (driver === 'pglite' && (process.env.VERCEL || process.env.CI)) {
+    throw new Error(
+      'Falta DATABASE_URL en el entorno de despliegue. Sin ella se usaría una base ' +
+        'local vacía y el sitio se publicaría sin contenido.',
+    );
+  }
+  return driver;
 }
 
 export async function getDb(): Promise<Database> {

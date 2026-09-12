@@ -21,6 +21,20 @@ import type { NextRequest } from 'next/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/*
+ * OJO CON EL ALOJAMIENTO SIN SERVIDOR.
+ *
+ * Una función serverless tiene un tope de duración (60 s en el plan gratuito de
+ * Vercel, 300 s en el de pago) y una emisora de radio es una conexión que dura
+ * horas. Ahí el audio se cortará al llegar a ese tope, y afecta al 37 % del
+ * catálogo: las emisoras cuyo origen solo sirve http.
+ *
+ * Este valor sube el tope hasta donde permite el plan, pero no resuelve el
+ * problema de fondo. El relay quiere un sitio que aguante conexiones largas:
+ * un Cloudflare Worker, un contenedor o un VPS. Está documentado en el README.
+ */
+export const maxDuration = 60;
+
 const MAX_SECONDS = 60 * 60 * 3; // corta a las 3 h: evita conexiones zombis
 
 export async function GET(request: NextRequest) {

@@ -95,6 +95,47 @@ no puede leerlo desde un navegador aunque el canal esté perfectamente vivo.
 
 ---
 
+## Despliegue de la web (Vercel)
+
+La aplicación compila y prerrenderiza varias páginas **durante el build**, así que Vercel necesita
+poder hablar con la base en ese momento, no solo al servir.
+
+Configuración del proyecto en Vercel:
+
+| Ajuste | Valor |
+|---|---|
+| Framework | Next.js (se detecta solo) |
+| **Root Directory** | `apps/web` |
+| Include files outside root | activado (hace falta: los paquetes compartidos viven fuera) |
+| Variable `DATABASE_URL` | la cadena de Neon |
+| Variable `NEXT_PUBLIC_SITE_URL` | el dominio final, para sitemap y metadatos |
+
+Si `DATABASE_URL` falta, el build **falla a propósito**. Antes caía a la base local embebida y
+publicaba un sitio vacío sin quejarse, que es peor: un error se ve, una web sin contenido se
+descubre tarde.
+
+Conviene desplegar en la región más cercana a la base: cada página hace varias consultas y, con la
+función en Europa y Neon en Virginia, cada una suma ida y vuelta.
+
+### El relay no cabe en una función serverless
+
+**El 37 % del catálogo (21 375 emisoras) tiene origen solo `http://`** y necesita pasar por
+`/api/v1/relay` para sonar en una página `https`. Pero una función serverless tiene un tope de
+duración —60 s en el plan gratuito de Vercel, 300 s en el de pago— y una emisora es una conexión
+que dura horas: al llegar al tope, el audio se corta.
+
+El resto del sitio funciona perfectamente en Vercel; es solo el relay lo que quiere otro sitio.
+Opciones, de menos a más trabajo:
+
+1. **Cloudflare Worker** para el relay, y apuntar la web ahí. Es lo que estaba previsto en el
+   diseño: un Worker reenvía bytes sin consumir tiempo de CPU mientras lo hace.
+2. **Un contenedor o VPS** (Fly.io, Railway) solo para esa ruta.
+3. **Renunciar a esas emisoras**: poner `NEXT_PUBLIC_RELAY_ENABLED=false` en la ingesta hace que
+   `check:streams` las marque como no reproducibles y desaparezcan del catálogo. Pierdes un tercio,
+   pero nada queda roto a medias.
+
+---
+
 ## Rankings (Top 10)
 
 Radio y televisión se miden distinto, y la interfaz lo dice en vez de disimularlo.
